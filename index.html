@@ -3,87 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puhu Suomea! - Ääntämispeli</title>
+    <title>Puhu Suomea!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .animate-pulse-fast { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1.05); } 50% { opacity: .7; transform: scale(1); } }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
     </style>
 </head>
 <body class="bg-sky-50 min-h-screen">
-
-    <div id="app">
-        </div>
-
+    <div id="app"></div>
     <script>
-        // SANALISTA KOODISTASI
         const wordList = [
-            { word: "Ylös", category: "Suunta" },
-            { word: "Ulos", category: "Suunta" },
-            { word: "Tyyny", category: "Koti" },
-            { word: "Tuuli", category: "Luonto" },
-            { word: "Pöytä", category: "Koti" },
-            { word: "Kynä", category: "Koulu" },
-            { word: "Sääri", category: "Keho" },
-            { word: "Saari", category: "Luonto" },
-            { word: "Öljy", category: "Ruoka" },
-            { word: "Yö", category: "Aika" },
-            { word: "Minä tykkään", category: "Lause" },
-            { word: "Hän syö", category: "Lause" },
-            { word: "Pallo lentää", category: "Lause" },
-            { word: "Vihreä omena", category: "Lause" },
-            { word: "Kylmä vesi", category: "Lause" },
-            { word: "Ystävä", category: "Ihminen" },
-            { word: "Kysyä", category: "Verbi" },
-            { word: "Pysäkki", category: "Kaupunki" },
+            { word: "Ylös", category: "Suunta" }, { word: "Ulos", category: "Suunta" },
+            { word: "Tyyny", category: "Koti" }, { word: "Tuuli", category: "Luonto" },
+            { word: "Pöytä", category: "Koti" }, { word: "Kynä", category: "Koulu" },
+            { word: "Sääri", category: "Keho" }, { word: "Saari", category: "Luonto" },
+            { word: "Öljy", category: "Ruoka" }, { word: "Yö", category: "Aika" },
+            { word: "Minä tykkään", category: "Lause" }, { word: "Hän syö", category: "Lause" },
+            { word: "Pallo lentää", category: "Lause" }, { word: "Vihreä omena", category: "Lause" },
+            { word: "Kylmä vesi", category: "Lause" }, { word: "Ystävä", category: "Ihminen" },
+            { word: "Kysyä", category: "Verbi" }, { word: "Pysäkki", category: "Kaupunki" },
             { word: "Pyörä", category: "Kulkuneuvo" }
         ];
 
         let currentIndex = 0;
         let score = 0;
         let isListening = false;
-        let feedback = null; // 'correct', 'wrong', 'error'
-        let transcript = "";
-        let gameState = 'start'; // 'start', 'playing', 'end'
+        let feedback = null;
+        let gameState = 'start';
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
-
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
+        const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+        if (recognition) {
             recognition.lang = 'fi-FI';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
             recognition.onresult = (event) => {
                 const spoken = event.results[0][0].transcript.toLowerCase().trim();
                 const target = wordList[currentIndex].word.toLowerCase().trim();
-                transcript = spoken;
-                
-                // Joustava tarkistus koodisi mukaan
                 if (spoken.includes(target) || target.includes(spoken)) {
-                    feedback = 'correct';
-                    score++;
-                } else {
-                    feedback = 'wrong';
-                }
-                isListening = false;
-                render();
+                    score++; feedback = 'correct';
+                } else { feedback = 'wrong'; }
+                isListening = false; render();
             };
-
-            recognition.onerror = () => {
-                isListening = false;
-                feedback = 'error';
-                render();
-            };
-
-            recognition.onend = () => {
-                isListening = false;
-                render();
-            };
+            recognition.onend = () => { isListening = false; render(); };
         }
 
         function speak(text) {
@@ -92,55 +54,45 @@
             window.speechSynthesis.speak(u);
         }
 
-        function startListening() {
-            if (!recognition) return;
-            feedback = null;
-            transcript = "";
-            try {
-                recognition.start();
-                isListening = true;
-                render();
-            } catch (e) { console.error(e); }
-        }
-
-        function nextWord() {
-            if (currentIndex < wordList.length - 1) {
-                currentIndex++;
-                feedback = null;
-                transcript = "";
-                render();
-            } else {
-                gameState = 'end';
-                render();
-            }
-        }
-
         function render() {
             const app = document.getElementById('app');
-            
             if (gameState === 'start') {
-                app.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center p-4">
-                    <div class="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full text-center border-b-8 border-sky-200">
-                        <div class="bg-sky-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i data-lucide="mic" class="w-12 h-12 text-sky-600"></i>
-                        </div>
-                        <h1 class="text-4xl font-black text-sky-900 mb-4 tracking-tight">PUHU SUOMEA!</h1>
-                        <p class="text-gray-600 mb-8 text-lg">
-                            Harjoitellaan vaikeita sanoja. Lue sana ääneen ja katso saatko pisteitä! <br/>
-                            <span class="font-bold text-sky-600 italic">Muista: ä, ö, y!</span>
-                        </p>
-                        <button onclick="gameState='playing'; render();" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-8 rounded-2xl text-2xl transition-all shadow-lg active:scale-95">
-                            ALOITA PELI
-                        </button>
+                app.innerHTML = `<div class="min-h-screen flex items-center justify-center p-4 text-center">
+                    <div class="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full border-b-8 border-sky-200">
+                        <h1 class="text-3xl font-black text-sky-900 mb-6">PUHU SUOMEA!</h1>
+                        <button onclick="gameState='playing'; render();" class="w-full bg-sky-500 text-white font-bold py-4 rounded-2xl text-xl shadow-lg">ALOITA PELI</button>
                     </div>
                 </div>`;
             } else if (gameState === 'playing') {
                 const item = wordList[currentIndex];
-                const progress = ((currentIndex + 1) / wordList.length) * 100;
-
-                app.innerHTML = `
-                <div class="min-h-screen flex flex-col p-4">
-                    <div class="w-full max-w-2xl mx-auto mb-8 pt-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sky-7
+                app.innerHTML = `<div class="p-4 max-w-2xl mx-auto text-center">
+                    <div class="bg-white p-8 rounded-[2rem] shadow-xl border-t-8 border-sky-400 mt-10">
+                        <div class="text-sky-500 font-bold mb-2 uppercase text-sm">${item.category}</div>
+                        <h2 class="text-5xl font-black mb-10">${item.word}</h2>
+                        <div class="flex flex-wrap justify-center gap-4">
+                            <button onclick="speak('${item.word}')" class="bg-gray-100 p-4 rounded-full text-gray-600 shadow-sm"><i data-lucide="volume-2"></i></button>
+                            <button onclick="isListening=true; recognition.start(); render();" class="${isListening ? 'bg-red-500 animate-pulse' : 'bg-sky-500'} text-white px-8 py-4 rounded-full font-bold shadow-lg flex items-center gap-2">
+                                <i data-lucide="mic"></i> ${isListening ? 'KUUNNELLAAN...' : 'PUHU'}
+                            </button>
+                        </div>
+                        <div class="mt-6 min-h-[60px]">
+                            ${feedback === 'correct' ? '<div class="text-emerald-500 font-bold text-xl animate-bounce">OIKEIN!</div><button onclick="currentIndex++; feedback=null; if(currentIndex>=wordList.length) gameState=\'end\'; render();" class="mt-4 bg-sky-100 text-sky-700 px-6 py-2 rounded-xl font-bold">SEURAAVA SANA</button>' : ''}
+                            ${feedback === 'wrong' ? '<div class="text-red-500 font-bold italic">Yritä uudelleen!</div>' : ''}
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                app.innerHTML = `<div class="min-h-screen flex items-center justify-center p-4 text-center">
+                    <div class="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full border-b-8 border-emerald-200">
+                        <h1 class="text-3xl font-black text-emerald-900 mb-2 font-black">VALMIS!</h1>
+                        <p class="text-xl text-emerald-700 font-bold mb-8 font-black">Pisteet: ${score} / ${wordList.length}</p>
+                        <button onclick="location.reload()" class="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg">PELAA UUDELLEEN</button>
+                    </div>
+                </div>`;
+            }
+            lucide.createIcons();
+        }
+        render();
+    </script>
+</body>
+</html>
